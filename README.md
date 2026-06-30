@@ -364,13 +364,15 @@ $ _
   SETUP — todos os assets são self-hosted (sem Vercel/Demolab, sem 429)
   ──────────────────────────────────────────────────────────────────────────
 
-  • Cards (stats / languages / contributions) + snake são gerados pelo
-    workflow .github/workflows/profile.yml e commitados neste repo.
-  • Gerador próprio: scripts/gen_profile.py (Python stdlib, sem dependências).
+  • Todos os assets (header, stats, languages, contributions, typing, footer)
+    + snake são gerados pelo workflow .github/workflows/profile.yml e
+    commitados neste repo — sem dependência de terceiros em tempo de render.
+  • Gerador próprio low-poly/retro: scripts/ (svgkit.py + github_data.py +
+    gen_profile.py), Python stdlib puro, sem dependências.
   • Para incluir stats privados, adicione o secret PROFILE_TOKEN (PAT classic
     com escopos repo + read:user). Sem ele, mostra apenas dados públicos.
   • Primeiro run: aba Actions → "Generate profile assets" → Run workflow.
-    Depois roda sozinho diariamente. Detalhes em docs/SELF-HOST.md.
+    Depois roda sozinho diariamente.
   ──────────────────────────────────────────────────────────────────────────
 -->
 

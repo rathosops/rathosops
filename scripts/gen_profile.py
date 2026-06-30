@@ -1,309 +1,210 @@
 #!/usr/bin/env python3
+"""Generate the retro / low-poly profile SVGs and write them to ``assets/``.
+
+Thin orchestrator: pull a :class:`~github_data.Profile`, compose the cards from
+:mod:`svgkit` primitives, and persist them. Run in CI by
+``.github/workflows/profile.yml`` (and locally with ``GH_TOKEN`` set).
+
+Generated assets
+----------------
+``header.svg``        low-poly retrowave scene + title
+``stats.svg``         RPG character sheet (LEVEL, XP, attribute bars)
+``languages.svg``     "equipped skills" loadout with pixel proficiency bars
+``contributions.svg`` contribution heightmap as low-poly 3D terrain
+``typing.svg``        animated RPG dialogue box
+``footer.svg``        low-poly mountain silhouette + tagline
 """
-Self-hosted GitHub profile asset generator — no third-party render services.
+from __future__ import annotations
 
-Queries the GitHub GraphQL API with a token (provided by GitHub Actions or the
-local environment) and renders vaporwave-themed SVGs committed to this repo:
-
-    assets/stats.svg          career/activity stat card
-    assets/languages.svg      top languages bar + legend
-    assets/contributions.svg  last-year contribution calendar (animated)
-
-Pure standard library — no pip dependencies. Palette matches assets/header.svg.
-
-Env:
-    GH_TOKEN   GitHub token (PAT classic with `repo,read:user` for private stats,
-               or the default Actions GITHUB_TOKEN for public-only).
-    GH_LOGIN   target username (default: rathosops)
-"""
-import json
 import os
-import sys
-import urllib.request
-from collections import OrderedDict
 
-LOGIN = os.environ.get("GH_LOGIN", "rathosops")
-TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+import svgkit as k
+from github_data import Profile, load, placeholder
 
-# ── vaporwave palette (matches assets/header.svg) ────────────────────────────
-BG = "#1a0b2e"
-BG2 = "#241046"
-PINK = "#ff2e97"
-PINK2 = "#ff6bd6"
-PURPLE = "#bf00ff"
-CYAN = "#00ffff"
-TEXT = "#e0c3fc"
-INDIGO = "#3a0ca3"
+ASSETS = os.path.join(os.path.dirname(__file__), "..", "assets")
 
-QUERY = """
-query($login: String!) {
-  user(login: $login) {
-    name
-    login
-    followers { totalCount }
-    contributionsCollection {
-      totalCommitContributions
-      restrictedContributionsCount
-      totalPullRequestContributions
-      totalIssueContributions
-      totalRepositoryContributions
-      contributionCalendar {
-        totalContributions
-        weeks { contributionDays { contributionCount date } }
-      }
-    }
-    repositories(first: 100, ownerAffiliations: OWNER, isFork: false,
-                 orderBy: {field: STARGAZERS, direction: DESC}) {
-      totalCount
-      nodes {
-        stargazerCount
-        languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
-          edges { size node { name color } }
-        }
-      }
-    }
-  }
-}
-"""
+TAGLINE_LINES = [
+    "Backend Engineer -> DevOps / DevSecOps",
+    "If it's not in a pipeline, it doesn't ship.",
+    "Shift-left or go home.",
+    "btw I use Arch.",
+    "Linux is not an OS. It's a religion.",
+    "I don't deploy manually. I'm not an animal.",
+]
 
 
-def fetch():
-    if not TOKEN:
-        sys.exit("ERROR: set GH_TOKEN (or GITHUB_TOKEN) in the environment.")
-    body = json.dumps({"query": QUERY, "variables": {"login": LOGIN}}).encode()
-    req = urllib.request.Request(
-        "https://api.github.com/graphql",
-        data=body,
-        headers={
-            "Authorization": f"bearer {TOKEN}",
-            "Content-Type": "application/json",
-            "User-Agent": f"{LOGIN}-profile-generator",
-        },
+# ── header ────────────────────────────────────────────────────────────────────
+def render_header(p: Profile) -> str:
+    """Low-poly retrowave hero: faceted sun, layered mountains, neon title."""
+    w, h = 1200, 300
+    sky = k.linear_gradient("sky", [(0, k.BG), (0.5, k.INDIGO), (1, "#7209b7")], x2=0, y2=1)
+    scene = (
+        f"<defs>{sky}</defs>"
+        f'<rect width="{w}" height="{h}" fill="url(#sky)"/>'
+        + k.starfield(w, count=9, max_y=110)
+        + k.faceted_sun(w / 2, 175, 72)
+        + k.lowpoly_band(w, 250, 70, seed=11, segments=20, lo=k.INDIGO, hi=k.PURPLE)
+        + k.lowpoly_band(w, 300, 110, seed=4, segments=16, lo="#2a0f4a", hi=k.PINK)
+        + k.scanline(w, h)
+        + k.text(w / 2, 90, "rathosops", size=44, fill="#ffffff", font=k.PIXEL,
+                 anchor="middle", weight=700)
+        + k.text(w / 2, 122, "&#9656; backend &#8594; secure, automated &amp; observable pipelines &#9666;",
+                 size=13, fill=k.CYAN, anchor="middle", spacing=1)
+        + f'<rect x="1" y="1" width="{w-2}" height="{h-2}" rx="10" fill="none" '
+        f'stroke="{k.PINK2}" stroke-width="1.5" opacity="0.7"/>'
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        payload = json.load(resp)
-    if "errors" in payload:
-        sys.exit("GraphQL errors: " + json.dumps(payload["errors"], indent=2))
-    return payload["data"]["user"]
+    return k.document(w, h, scene, label="rathosops — low-poly retrowave header")
 
 
-def aggregate(user):
-    cc = user["contributionsCollection"]
-    repos = user["repositories"]["nodes"]
-    stars = sum(r["stargazerCount"] for r in repos)
+# ── stats: RPG character sheet ────────────────────────────────────────────────
+def render_stats(p: Profile) -> str:
+    """Stats as an RPG sheet: LEVEL badge, XP bar and four attribute bars."""
+    w, h = 460, 210
+    attrs = [("ATK", p.commits, "commits"), ("DEF", p.prs, "pull reqs"),
+             ("MAG", p.issues, "issues"), ("LCK", p.stars, "stars")]
+    cap = max((v for _, v, _ in attrs), default=1) or 1
 
-    langs = OrderedDict()
-    for r in repos:
-        for edge in r["languages"]["edges"]:
-            n = edge["node"]["name"]
-            if n not in langs:
-                langs[n] = {"size": 0, "color": edge["node"]["color"] or "#888"}
-            langs[n]["size"] += edge["size"]
-    top = sorted(langs.items(), key=lambda kv: kv[1]["size"], reverse=True)[:8]
-    total_size = sum(v["size"] for _, v in top) or 1
-
-    days = []
-    for week in cc["contributionCalendar"]["weeks"]:
-        for d in week["contributionDays"]:
-            days.append(d["contributionCount"])
-
-    return {
-        "name": user["name"] or user["login"],
-        "login": user["login"],
-        "followers": user["followers"]["totalCount"],
-        "stars": stars,
-        "commits": cc["totalCommitContributions"] + cc["restrictedContributionsCount"],
-        "prs": cc["totalPullRequestContributions"],
-        "issues": cc["totalIssueContributions"],
-        "repos": user["repositories"]["totalCount"],
-        "total_contrib": cc["contributionCalendar"]["totalContributions"],
-        "langs": [(n, v["size"] / total_size, v["color"]) for n, v in top],
-        "weeks": cc["contributionCalendar"]["weeks"],
-    }
-
-
-def esc(s):
-    return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
-
-
-# ── shared SVG fragments ─────────────────────────────────────────────────────
-def defs():
-    return f"""
-  <defs>
-    <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="{PINK2}"/>
-      <stop offset="100%" stop-color="{CYAN}"/>
-    </linearGradient>
-    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="{PINK2}"/>
-      <stop offset="50%" stop-color="{PURPLE}"/>
-      <stop offset="100%" stop-color="{CYAN}"/>
-    </linearGradient>
-    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="{BG2}"/>
-      <stop offset="100%" stop-color="{BG}"/>
-    </linearGradient>
-  </defs>"""
-
-
-def frame(w, h, title):
-    return f"""
-  <rect x="0.75" y="0.75" width="{w-1.5}" height="{h-1.5}" rx="10" fill="url(#panel)"
-        stroke="url(#frame)" stroke-width="1.5"/>
-  <rect x="0" y="0" width="{w}" height="2.5" fill="{CYAN}" opacity="0.08">
-    <animate attributeName="y" values="-3;{h}" dur="5s" repeatCount="indefinite"/>
-  </rect>
-  <text x="18" y="30" font-family="'Press Start 2P', monospace" font-size="13"
-        fill="url(#title)">&#9656; {esc(title)}</text>
-  <line x1="18" y1="40" x2="{w-18}" y2="40" stroke="{PURPLE}" stroke-width="1" opacity="0.4"/>"""
-
-
-# ── stats card ───────────────────────────────────────────────────────────────
-def render_stats(d):
-    w, h = 460, 200
-    rows = [
-        ("commits", "commits (this year)", d["commits"]),
-        ("merge", "pull requests", d["prs"]),
-        ("bug", "issues", d["issues"]),
-        ("star", "stars earned", d["stars"]),
-        ("repo", "public repositories", d["repos"]),
-        ("users", "followers", d["followers"]),
+    body = [
+        k.panel(w, h, f"player :: {k.esc(p.login)}"),
+        k.text(w - 18, 30, f"LV {p.level}", size=13, fill=k.CYAN, font=k.PIXEL, anchor="end"),
+        k.text(22, 60, "XP", size=11, fill=k.PINK2, font=k.PIXEL),
+        k.pixel_bar(60, 50, w - 80, 12, p.xp_fraction, segments=24, color=k.CYAN),
+        k.text(w - 18, 60, f"{p.total_contrib:,}", size=11, fill=k.TEXT, anchor="end"),
     ]
-    y = 64
-    body = []
-    for i, (_, label, value) in enumerate(rows):
-        ry = y + i * 21
-        body.append(
-            f'<text x="22" y="{ry}" font-family="monospace" font-size="13" fill="{TEXT}">'
-            f'<tspan fill="{PINK}">&#9656;</tspan> {esc(label)}</text>'
-            f'<text x="{w-22}" y="{ry}" text-anchor="end" font-family="monospace" '
-            f'font-size="13" font-weight="700" fill="{CYAN}">{value:,}</text>'
-        )
-    total = (
-        f'<text x="{w/2}" y="192" text-anchor="middle" font-family="monospace" '
-        f'font-size="11" fill="{PINK2}">{d["total_contrib"]:,} contributions in the last year</text>'
+    y = 92
+    for i, (label, value, sub) in enumerate(attrs):
+        ry = y + i * 27
+        body += [
+            k.text(22, ry, label, size=11, fill=k.PINK, font=k.PIXEL),
+            k.pixel_bar(72, ry - 11, 250, 12, value / cap, segments=20,
+                        color=k.ramp(value / cap)),
+            k.text(w - 18, ry, f"{value:,} {sub}", size=12, fill=k.TEXT, anchor="end"),
+        ]
+    body.append(
+        k.text(w / 2, 202, f"REPOS {p.repos:,}  &#9670;  FOLLOWERS {p.followers:,}",
+               size=11, fill=k.PINK2, anchor="middle")
     )
-    return (
-        f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
-        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GitHub stats">'
-        + defs() + frame(w, h, f"{esc(d['login'])} :: stats")
-        + "".join(body) + total + "</svg>\n"
-    )
+    return k.document(w, h, *body, label="GitHub stats — RPG character sheet")
 
 
-# ── languages card ───────────────────────────────────────────────────────────
-def render_languages(d):
-    w, h = 460, 200
-    bar_y, bar_x, bar_w, bar_h = 58, 18, w - 36, 16
-    segs, x = [], bar_x
-    for name, frac, color in d["langs"]:
-        seg = max(frac * bar_w, 0)
-        segs.append(
-            f'<rect x="{x:.1f}" y="{bar_y}" width="{seg:.1f}" height="{bar_h}" fill="{color}">'
-            f'<title>{esc(name)} {frac*100:.1f}%</title></rect>'
-        )
-        x += seg
-    # rounded mask via overlay border
-    segs.append(
-        f'<rect x="{bar_x}" y="{bar_y}" width="{bar_w}" height="{bar_h}" rx="4" '
-        f'fill="none" stroke="{PURPLE}" stroke-width="1" opacity="0.6"/>'
-    )
-    # legend grid 2 cols x 4
-    legend, ly = [], 96
-    for i, (name, frac, color) in enumerate(d["langs"]):
-        col = i % 2
-        row = i // 2
-        lx = bar_x + col * (bar_w / 2)
-        yy = ly + row * 24
-        legend.append(
-            f'<circle cx="{lx+6}" cy="{yy-4}" r="5" fill="{color}"/>'
-            f'<text x="{lx+18}" y="{yy}" font-family="monospace" font-size="12" fill="{TEXT}">'
-            f'{esc(name)} <tspan fill="{CYAN}">{frac*100:.1f}%</tspan></text>'
-        )
-    return (
-        f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
-        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Top languages">'
-        + defs() + frame(w, h, f"{esc(d['login'])} :: languages")
-        + "".join(segs) + "".join(legend) + "</svg>\n"
-    )
+# ── languages: equipped skills ───────────────────────────────────────────────
+def render_languages(p: Profile) -> str:
+    """Top languages as an "equipped skills" loadout with proficiency bars."""
+    w, h = 460, 210
+    body = [k.panel(w, h, f"{k.esc(p.login)} :: equipped skills")]
+    rows = p.langs[:6]
+    y = 70
+    for i, (name, frac, color) in enumerate(rows):
+        ry = y + i * 23
+        body += [
+            f'<circle cx="26" cy="{ry-4}" r="5" fill="{color}"/>',
+            k.text(40, ry, k.esc(name), size=12, fill=k.TEXT),
+            k.pixel_bar(190, ry - 11, 180, 11, frac, segments=18, color=color),
+            k.text(w - 18, ry, f"{frac*100:.1f}%", size=12, fill=k.CYAN, anchor="end"),
+        ]
+    return k.document(w, h, *body, label="Top languages — equipped skills")
 
 
-# ── contribution calendar (animated) ─────────────────────────────────────────
-def contrib_color(count, mx):
-    if count <= 0:
-        return "#2a1a44"
-    t = count / mx if mx else 0
-    stops = [(0.0, INDIGO), (0.4, PURPLE), (0.7, PINK), (1.0, CYAN)]
-    for i in range(len(stops) - 1):
-        a, ca = stops[i]
-        b, cb = stops[i + 1]
-        if t <= b:
-            f = (t - a) / (b - a) if b > a else 0
-            return lerp(ca, cb, f)
-    return CYAN
+# ── contributions: low-poly 3D terrain ───────────────────────────────────────
+def render_contributions(p: Profile) -> str:
+    """Weekly contributions sculpted into a flat-shaded low-poly terrain."""
+    w, h = 720, 240
+    base_y, amp = 212, 138
+    mx = max(p.weekly, default=1) or 1
+    heights = [v / mx for v in p.weekly]
 
-
-def lerp(c1, c2, f):
-    c1 = c1.lstrip("#")
-    c2 = c2.lstrip("#")
-    r = round(int(c1[0:2], 16) + (int(c2[0:2], 16) - int(c1[0:2], 16)) * f)
-    g = round(int(c1[2:4], 16) + (int(c2[2:4], 16) - int(c1[2:4], 16)) * f)
-    b = round(int(c1[4:6], 16) + (int(c2[4:6], 16) - int(c1[4:6], 16)) * f)
-    return f"#{r:02x}{g:02x}{b:02x}"
-
-
-def render_contributions(d):
-    weeks = d["weeks"]
-    cell, gap = 11, 3
-    ncols = len(weeks)
-    grid_w = ncols * (cell + gap)
-    pad_x, pad_y = 18, 52
-    w = grid_w + pad_x * 2
-    h = pad_y + 7 * (cell + gap) + 28
-    mx = max((day["contributionCount"] for week in weeks for day in week["contributionDays"]), default=1)
-
-    cells = []
-    for ci, week in enumerate(weeks):
-        for di, day in enumerate(week["contributionDays"]):
-            cx = pad_x + ci * (cell + gap)
-            cy = pad_y + di * (cell + gap)
-            color = contrib_color(day["contributionCount"], mx)
-            cells.append(
-                f'<rect x="{cx}" y="{cy}" width="{cell}" height="{cell}" rx="2" fill="{color}">'
-                f'<title>{esc(day["date"])}: {day["contributionCount"]}</title></rect>'
-            )
-    # animated neon sweep column
     sweep = (
-        f'<rect x="{pad_x}" y="{pad_y}" width="{cell}" height="{7*(cell+gap)-gap}" '
-        f'rx="2" fill="{CYAN}" opacity="0.18">'
-        f'<animate attributeName="x" values="{pad_x};{pad_x+grid_w-cell}" '
-        f'dur="3.5s" repeatCount="indefinite"/></rect>'
+        f'<rect x="18" y="52" width="3" height="{base_y-52}" fill="{k.CYAN}" opacity="0.25">'
+        f'<animate attributeName="x" values="18;{w-21}" dur="4s" repeatCount="indefinite"/></rect>'
     )
-    total = (
-        f'<text x="{w-pad_x}" y="{h-12}" text-anchor="end" font-family="monospace" '
-        f'font-size="11" fill="{PINK2}">{d["total_contrib"]:,} contributions in the last year</text>'
-    )
-    return (
-        f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
-        f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contribution activity">'
-        + defs() + frame(w, h, "contribution activity")
-        + "".join(cells) + sweep + total + "</svg>\n"
-    )
+    body = [
+        k.panel(w, h, "contribution terrain"),
+        k.lowpoly_band(w, base_y, 60, seed=21, segments=28, lo="#221042", hi=k.INDIGO),
+        k.lowpoly_band(w, base_y, amp, seed=3, segments=len(heights) - 1,
+                       lo=k.INDIGO, hi=k.CYAN, heights=heights),
+        sweep,
+        k.text(w - 18, h - 14, f"{p.total_contrib:,} contributions in the last year",
+               size=11, fill=k.PINK2, anchor="end"),
+    ]
+    return k.document(w, h, *body, label="Contribution activity — low-poly terrain")
 
 
-def main():
-    user = fetch()
-    d = aggregate(user)
-    out = {
-        "assets/stats.svg": render_stats(d),
-        "assets/languages.svg": render_languages(d),
-        "assets/contributions.svg": render_contributions(d),
-    }
-    for path, svg in out.items():
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(svg)
-        print(f"wrote {path} ({len(svg)} bytes)")
+# ── typing: RPG dialogue box ─────────────────────────────────────────────────
+def _cycling_text(x: float, y: float, lines: list[str], *, slot: float = 2.9) -> str:
+    """Opacity-cycled text lines sharing one timeline (perfectly synced)."""
+    cycle = len(lines) * slot
+    out = []
+    for i, line in enumerate(lines):
+        a, b = i / len(lines), (i + 1) / len(lines)
+        f = 0.012
+        keytimes = [0, max(a - f, 0), a + f, b - f, min(b + f, 1), 1]
+        for j in range(1, len(keytimes)):
+            keytimes[j] = max(keytimes[j], keytimes[j - 1] + 1e-4)
+        kt = ";".join(f"{t:.4f}" for t in keytimes)
+        out.append(
+            f'<text x="{x}" y="{y}" font-family="{k.PIXEL}" font-size="13" '
+            f'fill="url(#title)" opacity="0">{k.esc(line)}'
+            f'<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="{kt}" '
+            f'dur="{cycle}s" repeatCount="indefinite"/></text>'
+        )
+    return "".join(out)
+
+
+def render_typing(p: Profile) -> str:
+    """An 8-bit RPG dialogue box that types out the tagline lines."""
+    w, h = 720, 96
+    box = (
+        k.SHARED_DEFS
+        + f'<rect x="3" y="3" width="{w-6}" height="{h-6}" rx="6" fill="url(#panel)" '
+        f'stroke="url(#frame)" stroke-width="2"/>'
+        + f'<rect x="9" y="9" width="{w-18}" height="{h-18}" rx="4" fill="none" '
+        f'stroke="{k.PURPLE}" stroke-width="1" opacity="0.5"/>'
+        + k.text(22, h / 2 + 5, "&#9656;", size=14, fill=k.PINK, font=k.PIXEL)
+        + _cycling_text(46, h / 2 + 5, TAGLINE_LINES)
+        + f'<rect x="{w-26}" y="{h-22}" width="9" height="9" fill="{k.CYAN}">'
+        f'<animate attributeName="opacity" values="1;0;1" dur="0.9s" repeatCount="indefinite"/></rect>'
+    )
+    return k.document(w, h, box, label="Backend Engineer dialogue box")
+
+
+# ── footer ────────────────────────────────────────────────────────────────────
+def render_footer(p: Profile) -> str:
+    """Low-poly mountain silhouette with the mission tagline."""
+    w, h = 1200, 140
+    body = (
+        f'<rect width="{w}" height="{h}" fill="{k.BG}"/>'
+        + k.starfield(w, count=6, max_y=40)
+        + k.lowpoly_band(w, h, 90, seed=9, segments=26, lo=k.INDIGO, hi=k.PINK)
+        + k.text(w / 2, 40, "automate everything. secure it all.", size=18,
+                 fill=k.CYAN, anchor="middle", weight=700, spacing=1)
+    )
+    return k.document(w, h, body, label="automate everything. secure it all.")
+
+
+RENDERERS = {
+    "header.svg": render_header,
+    "stats.svg": render_stats,
+    "languages.svg": render_languages,
+    "contributions.svg": render_contributions,
+    "typing.svg": render_typing,
+    "footer.svg": render_footer,
+}
+
+
+def build(profile: Profile, out_dir: str = ASSETS) -> None:
+    """Render every asset for ``profile`` and write it under ``out_dir``."""
+    os.makedirs(out_dir, exist_ok=True)
+    for filename, renderer in RENDERERS.items():
+        path = os.path.join(out_dir, filename)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(renderer(profile))
+        print(f"wrote {os.path.normpath(path)}")
+
+
+def main() -> None:
+    """Load live data when a token is present, else render honest placeholders."""
+    has_token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    build(load() if has_token else placeholder())
 
 
 if __name__ == "__main__":
