@@ -1,66 +1,70 @@
-# Self-host dos cards (correção definitiva do "não aparece" / 429)
+# Profile assets — 100% self-hosted, generated in this repo
 
-## Por que os cards somem (stats, top-langs, streak, trophies)
+The profile cards no longer depend on any third-party render service
+(Vercel / Demolab). They are generated **by our own code** inside GitHub Actions
+and committed back to the repo as static SVGs, so the README just serves files
+from this repository. **No render-time dependency ⇒ no HTTP 429 ⇒ they never
+silently disappear** in Chrome, Edge or Brave.
 
-Eles são servidos por **instâncias públicas compartilhadas** no Vercel/Demolab:
+## How it works
 
-| Card | Serviço público |
-|------|-----------------|
-| GitHub stats / Top languages | `github-readme-stats.vercel.app` |
-| Streak | `streak-stats.demolab.com` |
-| Trophies | `github-profile-trophy.vercel.app` |
+```
+scripts/gen_profile.py            our generator — pure Python stdlib, no pip deps
+        │  queries GitHub GraphQL API with your token
+        ▼
+assets/stats.svg                  stat card (commits, PRs, issues, stars, ...)
+assets/languages.svg              top languages bar + legend
+assets/contributions.svg          last-year contribution calendar (animated)
+        │  committed to the repo by
+        ▼
+.github/workflows/profile.yml     runs daily (and on demand), commits the SVGs
+                                  + regenerates the contribution snake
+```
 
-Essas instâncias usam **uma cota compartilhada** da API do GitHub (5.000 req/h). Sob tráfego global, estouram o limite e devolvem **HTTP 429 (Too Many Requests)** → a imagem não renderiza em **qualquer navegador** (Chrome, Edge, Brave). Não é cache do seu browser e não tem a ver com o Brave Shields.
+Palette matches `assets/header.svg` (`#bf00ff / #ff2e97 / #00ffff / #1a0b2e`).
 
-O `&cache_seconds=86400` que já foi adicionado **reduz** a frequência do erro, mas não elimina. A solução real é rodar **sua própria instância** — aí você usa a SUA cota de 5.000 req/h, que ninguém mais consome.
+## One-time setup
 
----
+### 1. (Recommended) Add a token so private stats count
+The workflow falls back to the default `GITHUB_TOKEN` (public data only). To
+include **private commits / contributions**, add a PAT:
 
-## Passo a passo (≈10 min, tudo grátis)
+1. GitHub → Settings → Developer settings → Personal access tokens →
+   **Tokens (classic)** → Generate → scopes `repo` + `read:user` → copy it.
+2. In this repo: Settings → Secrets and variables → Actions → **New repository
+   secret** → name `PROFILE_TOKEN`, value = the token.
 
-Você vai criar 3 instâncias no Vercel (1 clique cada) e trocar 3 domínios no `README.md`.
+Without this secret everything still works — it just shows public numbers only.
 
-### Pré-requisitos
-- Conta no [Vercel](https://vercel.com/signup) (faça login **com o GitHub**).
-- Um **GitHub Personal Access Token (classic)** com escopo `repo` (para `count_private=true` funcionar):
-  GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)** → Generate → marque `repo` → copie o token.
+### 2. Run it the first time
+The committed `assets/*.svg` start as placeholder data. To populate real stats:
 
-### 1) github-readme-stats  (cobre *GitHub stats* + *Top languages*)
-1. Abra: https://github.com/anuraghazra/github-readme-stats#deploy-on-your-own-vercel-instance
-2. Clique em **Deploy** → autorize o Vercel a importar o fork.
-3. Na tela de deploy, em **Environment Variables**, adicione:
-   - `PAT_1` = *(o seu token classic do passo acima)*
-4. Deploy. Você recebe uma URL tipo `https://github-readme-stats-SEU.vercel.app`.
+- GitHub → **Actions** tab → *Generate profile assets* → **Run workflow**.
 
-### 2) github-profile-trophy  (cobre *Trophies*)
-1. Abra: https://github.com/ryo-ma/github-profile-trophy#deploy-on-your-own-vercel-instance
-2. **Deploy** → adicione a env var `GITHUB_TOKEN` = *(o seu token)* → Deploy.
-3. URL tipo `https://github-profile-trophy-SEU.vercel.app`.
+After it finishes it commits the real SVGs and the README updates automatically.
+From then on it refreshes **daily** (cron `17 4 * * *`).
 
-### 3) github-readme-streak-stats  (cobre *Streak*)
-1. Abra: https://github.com/DenverCoder1/github-readme-streak-stats#deploy-your-own
-2. **Deploy** → adicione `GH_TOKEN` = *(o seu token)* → Deploy.
-3. URL tipo `https://streak-stats-SEU.vercel.app`.
+### 3. Snake animation
+The same workflow generates the contribution snake into the `output` branch
+(referenced by the `$ ./snake.sh --render` section). First run may take a minute;
+until then the snake image 404s — that's expected.
 
----
+## Run / preview locally (optional)
 
-## Trocar os domínios no README
+```bash
+export GH_TOKEN=<your_pat>      # or a fine-grained token with read:user
+export GH_LOGIN=rathosops
+python scripts/gen_profile.py   # writes assets/stats|languages|contributions.svg
+```
 
-No `README.md`, faça **find & replace** (só o domínio muda, os parâmetros ficam iguais):
+No dependencies to install — standard library only.
 
-| Trocar isto | Por isto |
-|-------------|----------|
-| `github-readme-stats.vercel.app` | `github-readme-stats-SEU.vercel.app` |
-| `github-profile-trophy.vercel.app` | `github-profile-trophy-SEU.vercel.app` |
-| `streak-stats.demolab.com` | `streak-stats-SEU.vercel.app` |
+## Customizing
 
-> Substitua `SEU` pelo sufixo real que o Vercel gerou para cada projeto.
+- **Colors / theme:** edit the palette constants at the top of
+  `scripts/gen_profile.py` (`BG`, `PINK`, `CYAN`, ...).
+- **Which stats / layout:** edit `render_stats`, `render_languages`,
+  `render_contributions` in the same file.
+- **Refresh frequency:** change the `cron` in `.github/workflows/profile.yml`.
 
-Commit + push → os cards passam a carregar de forma estável em todos os navegadores.
-
----
-
-## Observações
-- O **header** (`./assets/header.svg`), o **snake** e os blocos de terminal **não dependem de Vercel** e nunca quebram por 429.
-- Os cards `github-profile-summary-cards.vercel.app` e o `activity-graph` também são instâncias públicas; se quiser blindá-los, têm deploy próprio análogo — mas costumam ser mais estáveis que os 3 acima.
-- O token nunca vai pro README nem pro Git: ele fica só nas Environment Variables do Vercel.
+Everything is our own code — nothing to deploy, no external account, no rate limit.
