@@ -124,7 +124,7 @@ def render_neofetch() -> str:
     size, line_h = 11, 13
     logo, art_w, art_h = _tux_logo(20, k.BODY_TOP, size=size, line_h=line_h)
 
-    info_rows = [[("rathosops", k.PINK2), ("@", COMMENT), ("github", KEY)],
+    info_rows = [[("mulletbawbaw", k.PINK2), ("@", COMMENT), ("github", KEY)],
                  [("─" * 30, COMMENT)],
                  *[_kv(key, val) for key, val in _NEOFETCH_INFO]]
     info_x = 20 + art_w + 40
@@ -143,10 +143,10 @@ def render_neofetch() -> str:
 def render_status() -> str:
     """Career snapshot as a coloured YAML-ish window."""
     rows = [
-        _comment("# rathosops career snapshot"),
+        _comment("# mulletbawbaw career snapshot"),
         "",
         [("Name", ACCENT), ("       Athos Aurélio", VALUE)],
-        [("Handle", ACCENT), ("     rathosops", VALUE)],
+        [("Handle", ACCENT), ("     mulletbawbaw", VALUE)],
         [("Role", ACCENT), ("       Senior Backend Engineer → DevOps / DevSecOps", VALUE)],
         [("Location", ACCENT), ("   Brazil (São Paulo state)", VALUE)],
         [("Mission", ACCENT), ('    "secure, automated and observable delivery pipelines"', k.PINK2)],
@@ -205,7 +205,7 @@ def render_pipeline() -> str:
 # ── $ htop ───────────────────────────────────────────────────────────────────
 _PROCS = [
     ("001", "pgfn/dide2", 1.0, "automação de dados governamentais"),
-    ("002", "rathosops/observability", 1.0, "LGTM stack + OpenTelemetry labs"),
+    ("002", "mulletbawbaw/observability", 1.0, "LGTM stack + OpenTelemetry labs"),
     ("003", "locacamba", 0.75, "sistema de gestão para cliente final"),
     ("004", "aws-devops-lab", 0.5, "hands-on EC2 + ECR + CloudWatch"),
     ("005", "terraform-aws-lab", 0.5, "provisionando infra como código"),
@@ -340,7 +340,7 @@ _CAREER_WIP = [
 
 def render_connect() -> str:
     """The career build: make invocation, progress bar and check-list output."""
-    rows: list = [[("rathosops@github", k.PINK2), (":~$ ", COMMENT),
+    rows: list = [[("mulletbawbaw@github", k.PINK2), (":~$ ", COMMENT),
                    ("sudo make ", KEY), ("deploy-career", ACCENT), (" \\", VALUE)]]
     pad = max(len(f) for f, _ in _CAREER_FLAGS)
     for i, (flag, val) in enumerate(_CAREER_FLAGS):

@@ -47,14 +47,14 @@ def render_header(p: Profile) -> str:
         + k.lowpoly_band(w, 250, 70, seed=11, segments=20, lo=k.INDIGO, hi=k.PURPLE)
         + k.lowpoly_band(w, 300, 110, seed=4, segments=16, lo="#2a0f4a", hi=k.PINK)
         + k.scanline(w, h)
-        + k.text(w / 2, 90, "rathosops", size=44, fill="#ffffff", font=k.PIXEL,
+        + k.text(w / 2, 90, "mulletbawbaw", size=44, fill="#ffffff", font=k.PIXEL,
                  anchor="middle", weight=700)
         + k.text(w / 2, 122, "&#9656; backend &#8594; secure, automated &amp; observable pipelines &#9666;",
                  size=13, fill=k.CYAN, anchor="middle", spacing=1)
         + f'<rect x="1" y="1" width="{w-2}" height="{h-2}" rx="10" fill="none" '
         f'stroke="{k.PINK2}" stroke-width="1.5" opacity="0.7"/>'
     )
-    return k.document(w, h, scene, label="rathosops — low-poly retrowave header")
+    return k.document(w, h, scene, label="mulletbawbaw — low-poly retrowave header")
 
 
 # ── stats: RPG character sheet ────────────────────────────────────────────────
@@ -130,6 +130,20 @@ def render_contributions(p: Profile) -> str:
     return k.document(w, h, *body, label="Contribution activity — low-poly terrain")
 
 
+# ── contributions: isometric 3D city ─────────────────────────────────────────
+def render_iso(p: Profile) -> str:
+    """Daily contributions extruded into a 3-D isometric city of neon towers."""
+    w, h = 560, 408
+    body = [
+        k.panel(w, h, "contributions :: isometric city"),
+        k.iso_city(p.grid, base_x=86, base_y=126, tile=16, max_h=58),
+        k.text(w - 18, h - 14,
+               f"{p.total_contrib:,} contributions &#8226; taller tower = busier day",
+               size=11, fill=k.PINK2, anchor="end"),
+    ]
+    return k.document(w, h, *body, label="contributions — isometric 3D city")
+
+
 # ── typing: RPG dialogue box ─────────────────────────────────────────────────
 def _cycling_text(x: float, y: float, lines: list[str], *, slot: float = 2.9) -> str:
     """Opacity-cycled text lines sharing one timeline (perfectly synced)."""
@@ -187,6 +201,7 @@ RENDERERS = {
     "stats.svg": render_stats,
     "languages.svg": render_languages,
     "contributions.svg": render_contributions,
+    "iso.svg": render_iso,
     "typing.svg": render_typing,
     "footer.svg": render_footer,
 }

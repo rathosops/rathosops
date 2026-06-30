@@ -63,6 +63,8 @@ class Profile:
     langs: list[tuple[str, float, str]] = field(default_factory=list)
     #: Per-week contribution totals (chronological), used to sculpt terrain.
     weekly: list[int] = field(default_factory=list)
+    #: Per-day grid ``[week][day]`` of contribution counts (drives the iso city).
+    grid: list[list[int]] = field(default_factory=list)
 
     @property
     def level(self) -> int:
@@ -112,10 +114,11 @@ def _aggregate(user: dict) -> Profile:
     top = sorted(languages.items(), key=lambda kv: kv[1]["size"], reverse=True)[:8]
     total_size = sum(v["size"] for _, v in top) or 1
 
-    weekly = [
-        sum(day["contributionCount"] for day in week["contributionDays"])
+    grid = [
+        [day["contributionCount"] for day in week["contributionDays"]]
         for week in calendar["weeks"]
     ]
+    weekly = [sum(week) for week in grid]
 
     return Profile(
         name=user["name"] or user["login"],
@@ -129,6 +132,7 @@ def _aggregate(user: dict) -> Profile:
         total_contrib=calendar["totalContributions"],
         langs=[(name, v["size"] / total_size, v["color"]) for name, v in top],
         weekly=weekly,
+        grid=grid,
     )
 
 
@@ -138,18 +142,19 @@ def load(login: str | None = None, token: str | None = None) -> Profile:
     ``login``/``token`` fall back to the ``GH_LOGIN`` and ``GH_TOKEN`` /
     ``GITHUB_TOKEN`` environment variables (as provided by GitHub Actions).
     """
-    login = login or os.environ.get("GH_LOGIN", "rathosops")
+    login = login or os.environ.get("GH_LOGIN", "mulletbawbaw")
     token = token or os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
     if not token:
         raise SystemExit("ERROR: set GH_TOKEN (or GITHUB_TOKEN) in the environment.")
     return _aggregate(_request(login, token))
 
 
-def placeholder(login: str = "rathosops") -> Profile:
+def placeholder(login: str = "mulletbawbaw") -> Profile:
     """A zeroed :class:`Profile` for first-run/offline rendering (honest blanks)."""
     return Profile(
         name=login, login=login, followers=0, stars=0, commits=0, prs=0, issues=0,
         repos=0, total_contrib=0,
         langs=[("run the workflow to populate", 1.0, PLACEHOLDER_COLOR)],
         weekly=[0] * 53,
+        grid=[[0] * 7 for _ in range(53)],
     )

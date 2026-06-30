@@ -323,6 +323,50 @@ def lowpoly_band(width: float, base_y: float, amp: float, *, seed: int,
     return "".join(facets)
 
 
+def iso_city(grid: list[list[int]], base_x: float, base_y: float, *,
+             tile: float = 16, max_h: float = 58) -> str:
+    """Project a ``[week][day]`` contribution grid into a 3-D isometric city.
+
+    Each day becomes an extruded tower whose height and colour scale with its
+    contribution count: a flat-shaded top diamond plus left/right faces (each a
+    darker tint toward the background) give the classic isometric, volumetric
+    read. Towers are painted back-to-front (by ``week + day`` depth) so nearer
+    blocks correctly overlap the ones behind them.
+    """
+    hw, hh = tile / 2, tile / 4
+    flat = [c for col in grid for c in col]
+    mx = max(flat) if flat else 1
+    mx = mx or 1
+
+    cells: list[tuple[float, str]] = []
+    for c, col in enumerate(grid):
+        for r, count in enumerate(col):
+            f = count / mx
+            h = f * max_h
+            cx = base_x + (c - r) * hw
+            cy = base_y + (c + r) * hh
+            top = ramp(f)
+            left, right = lerp(top, BG, 0.45), lerp(top, BG, 0.65)
+            # top diamond (raised by tower height) and base diamond corners
+            tx, ty = cx, cy - h - hh           # apex of top face
+            rx, ry = cx + hw, cy - h           # right of top face
+            bx, by = cx, cy - h + hh           # bottom of top face
+            lx, ly = cx - hw, cy - h           # left of top face
+            faces = (
+                f'<polygon points="{lx:.1f},{ly:.1f} {bx:.1f},{by:.1f} '
+                f'{cx:.1f},{cy+hh:.1f} {cx-hw:.1f},{cy:.1f}" fill="{left}"/>'
+                f'<polygon points="{bx:.1f},{by:.1f} {rx:.1f},{ry:.1f} '
+                f'{cx+hw:.1f},{cy:.1f} {cx:.1f},{cy+hh:.1f}" fill="{right}"/>'
+                f'<polygon points="{tx:.1f},{ty:.1f} {rx:.1f},{ry:.1f} '
+                f'{bx:.1f},{by:.1f} {lx:.1f},{ly:.1f}" fill="{top}" '
+                f'stroke="{lerp(top, CYAN, 0.2)}" stroke-width="0.4"/>'
+            )
+            cells.append((c + r, faces))
+
+    cells.sort(key=lambda cell: cell[0])      # painter's algorithm: far → near
+    return "".join(faces for _, faces in cells)
+
+
 def starfield(width: float, count: int = 7, *, max_y: float = 90,
               seed: int = 7) -> str:
     """Scattered twinkling stars across the top of a scene."""
