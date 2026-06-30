@@ -20,6 +20,7 @@ import os
 
 import svgkit as k
 from github_data import Profile, load, placeholder
+from terminals import TERMINALS
 
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "assets")
 
@@ -191,14 +192,20 @@ RENDERERS = {
 }
 
 
+def _write(out_dir: str, filename: str, svg: str) -> None:
+    path = os.path.join(out_dir, filename)
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(svg)
+    print(f"wrote {os.path.normpath(path)}")
+
+
 def build(profile: Profile, out_dir: str = ASSETS) -> None:
-    """Render every asset for ``profile`` and write it under ``out_dir``."""
+    """Render every data card and static terminal window under ``out_dir``."""
     os.makedirs(out_dir, exist_ok=True)
     for filename, renderer in RENDERERS.items():
-        path = os.path.join(out_dir, filename)
-        with open(path, "w", encoding="utf-8") as handle:
-            handle.write(renderer(profile))
-        print(f"wrote {os.path.normpath(path)}")
+        _write(out_dir, filename, renderer(profile))
+    for filename, renderer in TERMINALS.items():
+        _write(out_dir, filename, renderer())
 
 
 def main() -> None:

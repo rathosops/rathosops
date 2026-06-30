@@ -125,6 +125,106 @@ def panel(width: float, height: float, title: str) -> str:
     )
 
 
+# ── terminal window chrome ────────────────────────────────────────────────────
+LINE_HEIGHT = 18  #: vertical advance between monospace rows
+BODY_TOP = 62     #: y of the first body row (below the title bar)
+
+
+def window(width: float, title: str, body: str, *, rows: int,
+           decoration: str = "", label: str = "") -> str:
+    """A retro terminal window: traffic lights, title bar, neon frame, body.
+
+    ``rows`` is the number of monospace rows in ``body`` and drives the height
+    so every terminal block shares identical chrome and spacing (DRY).
+    ``decoration`` is optional extra SVG (e.g. a low-poly icon) drawn top-right.
+    """
+    height = BODY_TOP + rows * LINE_HEIGHT + 12
+    dots = "".join(
+        f'<circle cx="{20 + i*18}" cy="22" r="5.5" fill="{c}"/>'
+        for i, c in enumerate((PINK, PURPLE, CYAN))
+    )
+    return document(
+        width, height,
+        SHARED_DEFS,
+        f'<rect x="0.75" y="0.75" width="{width-1.5}" height="{height-1.5}" rx="10" '
+        f'fill="url(#panel)" stroke="url(#frame)" stroke-width="1.5"/>',
+        scanline(width, height),
+        dots,
+        text(width / 2, 27, esc(title), size=11, fill=PINK2, font=PIXEL, anchor="middle"),
+        f'<line x1="12" y1="40" x2="{width-12}" y2="40" stroke="{PURPLE}" stroke-width="1" opacity="0.35"/>',
+        decoration,
+        body,
+        label=label or title,
+    )
+
+
+def mono_rows(rows: list, *, x: float = 22, y0: float = BODY_TOP,
+              size: float = 13) -> str:
+    """Render monospace rows. Each row is a string or a list of ``(text, fill)``.
+
+    Spaces are preserved (``xml:space``) so ASCII art and columns stay aligned.
+    """
+    out = []
+    for i, row in enumerate(rows):
+        y = y0 + i * LINE_HEIGHT
+        spans = [(row, TEXT)] if isinstance(row, str) else row
+        body = "".join(
+            f'<tspan fill="{fill}" xml:space="preserve">{esc(seg)}</tspan>' for seg, fill in spans
+        )
+        out.append(
+            f'<text x="{x}" y="{y}" font-family="{MONO}" font-size="{size}" '
+            f'xml:space="preserve">{body}</text>'
+        )
+    return "".join(out)
+
+
+# ── low-poly decorative icons (vaporwave 3-D vibe) ───────────────────────────
+def icon_crt(x: float, y: float, s: float = 1.0) -> str:
+    """A faceted CRT computer/monitor in perspective."""
+    def p(px, py):
+        return f"{x+px*s:.1f},{y+py*s:.1f}"
+    return (
+        f'<g opacity="0.95">'
+        f'<polygon points="{p(0,0)} {p(34,4)} {p(34,26)} {p(0,30)}" fill="{INDIGO}" stroke="{CYAN}" stroke-width="1"/>'
+        f'<polygon points="{p(4,5)} {p(30,8)} {p(30,23)} {p(4,26)}" fill="{PURPLE}" opacity="0.7"/>'
+        f'<polygon points="{p(4,5)} {p(17,6.5)} {p(17,25)} {p(4,26)}" fill="{PINK}" opacity="0.45"/>'
+        f'<polygon points="{p(12,30)} {p(22,30)} {p(24,36)} {p(10,36)}" fill="{INDIGO}" stroke="{CYAN}" stroke-width="1"/>'
+        f'</g>'
+    )
+
+
+def icon_gamepad(x: float, y: float, s: float = 1.0) -> str:
+    """A low-poly retro game controller."""
+    def p(px, py):
+        return f"{x+px*s:.1f},{y+py*s:.1f}"
+    return (
+        f'<g opacity="0.95">'
+        f'<polygon points="{p(2,4)} {p(34,4)} {p(40,18)} {p(26,18)} {p(18,12)} {p(10,18)} {p(-4,18)}" '
+        f'fill="{PURPLE}" stroke="{CYAN}" stroke-width="1"/>'
+        f'<rect x="{x+6*s:.1f}" y="{y+8*s:.1f}" width="{2.5*s:.1f}" height="{6*s:.1f}" fill="{CYAN}"/>'
+        f'<rect x="{x+4*s:.1f}" y="{y+10*s:.1f}" width="{6.5*s:.1f}" height="{2.5*s:.1f}" fill="{CYAN}"/>'
+        f'<circle cx="{x+28*s:.1f}" cy="{y+9*s:.1f}" r="{1.8*s:.1f}" fill="{PINK}"/>'
+        f'<circle cx="{x+32*s:.1f}" cy="{y+12*s:.1f}" r="{1.8*s:.1f}" fill="{PINK2}"/>'
+        f'</g>'
+    )
+
+
+def icon_pizza(x: float, y: float, s: float = 1.0) -> str:
+    """A faceted pizza slice with pepperoni."""
+    def p(px, py):
+        return f"{x+px*s:.1f},{y+py*s:.1f}"
+    return (
+        f'<g opacity="0.95">'
+        f'<polygon points="{p(16,0)} {p(32,34)} {p(0,34)}" fill="#ffd36a" stroke="{PINK}" stroke-width="1"/>'
+        f'<polygon points="{p(16,0)} {p(24,17)} {p(8,17)}" fill="#ffe066" opacity="0.8"/>'
+        f'<polygon points="{p(16,0)} {p(6,21)} {p(0,34)} {p(0,34)}" fill="#ff9f78" opacity="0.5"/>'
+        f'<circle cx="{x+13*s:.1f}" cy="{y+16*s:.1f}" r="{2.4*s:.1f}" fill="{PINK}"/>'
+        f'<circle cx="{x+20*s:.1f}" cy="{y+24*s:.1f}" r="{2.4*s:.1f}" fill="{PINK}"/>'
+        f'<circle cx="{x+10*s:.1f}" cy="{y+27*s:.1f}" r="{2*s:.1f}" fill="{PINK}"/>'
+        f'</g>'
+    )
+
+
 # ── retro game widgets ────────────────────────────────────────────────────────
 def pixel_bar(x: float, y: float, width: float, height: float, frac: float, *,
               segments: int = 20, color: str = CYAN, gap: float = 2) -> str:

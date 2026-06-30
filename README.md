@@ -1,5 +1,5 @@
-<!-- 3D vaporwave header — served from this repo (no rate limits / never breaks in Brave) -->
-<img width="100%" alt="rathosops — backend experience to secure, automated and observable pipelines" src="./assets/header.svg" />
+<!-- main hero banner (animated) -->
+<img width="100%" alt="rathosops" src="./main-banner.gif" />
 
 <table border="0">
 <tr>
@@ -41,61 +41,15 @@
 
 ---
 
-## `$ neofetch`
+<div align="center">
 
-```
-                   -`                    ╭──────────────────────────────────────────╮
-                  .o+`                   │  rathosops@github                        │
-                 `ooo/                   ╰──────────────────────────────────────────╯
-                `+oooo:                    OS        ▸  Arch Linux (btw)
-               `+oooooo:                   Kernel    ▸  6.x.x-arch-hardened
-               -+oooooo+:                  Shell     ▸  zsh + tmux
-             `/:-:++oooo+:                 WM        ▸  Hyprland
-            `/++++/+++++++:                Editor    ▸  Neovim (obviously)
-           `/++++++++++++++:               Theme     ▸  Synthwave '84
-          `/+++ooooooooooooo/`             Path      ▸  Backend ──► DevOps
-         ./ooosssso++osssssso+`            Focus     ▸  CI/CD + Security + Cloud
-        .oossssso-````/ossssss+`           Cloud     ▸  AWS
-       -osssssso.      :ssssssso.          Uptime    ▸  coding since 2019
-      :osssssss/        osssso+++.         Packages  ▸  docker git python go terraform
-     /ossssssss/        +ssssooo/-         Terminal  ▸  kitty / alacritty
-   `/ossssso+/:-        -:/+osssso+-       Mission   ▸  automate everything, secure it all
-  `+sso+:-`                 `.-/+oso:
- `++:.                           `-/+/     ███ ███ ███ ███ ███ ███ ███ ███
- .`                                 `/     ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓ ▓▓▓
-```
+<img width="80%" alt="$ neofetch" src="./assets/term_neofetch.svg" />
 
----
+<br/><br/>
 
-## `$ cat /proc/self/status`
+<img width="75%" alt="$ cat /proc/self/status" src="./assets/term_status.svg" />
 
-```yaml
-# ╔═══════════════════════════════════════════════════════════════╗
-# ║   /proc/self/status — rathosops career snapshot               ║
-# ╚═══════════════════════════════════════════════════════════════╝
-
-Name:       Athos Aurélio
-Handle:     rathosops
-Role:       Senior Backend Engineer → DevOps / DevSecOps
-Location:   Brazil (São Paulo state)
-Mission:    "Transform backend experience into secure, automated and observable delivery pipelines"
-
-# ── trajectory ──────────────────────────────────────────────────
-current_role:   Senior Backend Engineer @ real production systems
-target_path:    DevOps / DevSecOps / Platform Engineering / SRE
-open_to:        [ Junior DevOps, Cloud Engineer, Automation Engineer, SRE, DevSecOps ]
-
-# ── stack ───────────────────────────────────────────────────────
-base:     [ Python, Go, FastAPI, Flask, Django, Linux, Docker, CI/CD, AWS ]
-target:   [ Kubernetes, Terraform, GitHub Actions, LGTM Stack, DevSecOps, IaC ]
-
-# ── principles ──────────────────────────────────────────────────
-philosophy:
-  - "If you ran it manually, you haven't shipped it — you've gambled."
-  - "Security is not a phase. It's a pipeline stage."
-  - "Observability is the difference between ops and guessing."
-  - "A Dockerfile is not DevOps. A reproducible, scanned, signed pipeline is."
-```
+</div>
 
 ---
 
@@ -141,7 +95,7 @@ philosophy:
 
 **`// workstation`**
 
-<img src="https://skillicons.dev/icons?i=neovim,git,github,archlinux,vscode,postman&theme=dark&perline=6" />
+<img src="https://skillicons.dev/icons?i=neovim,git,github,arch,vscode,postman&theme=dark&perline=6" />
 
 </td>
 </tr>
@@ -151,121 +105,27 @@ philosophy:
 
 ---
 
-## `$ cat ~/.pipeline.yml`
+<div align="center">
 
-<table>
-<tr>
-<td width="50%" valign="top">
+<img width="75%" alt="$ cat ~/.pipeline.yml" src="./assets/term_pipeline.svg" />
 
-```yaml
-# ~/.pipeline.yml — secure delivery standard
+<br/><br/>
 
-pipeline:
-  trigger:
-    - push
-    - pull_request
+<img width="80%" alt="$ htop — what's running now" src="./assets/term_htop.svg" />
 
-  code_quality:
-    - ruff          # python linting
-    - pylint        # static analysis
-    - pytest        # unit tests
-    - coverage      # 80% threshold enforced
+<br/><br/>
 
-  security:          # shift-left gates
-    - semgrep        # SAST — code patterns
-    - bandit         # python security
-    - gitleaks       # secrets scanning
-    - trivy          # container + fs scan
-    - osv-scanner    # dependency CVEs
-```
+<img width="80%" alt="$ tree ~/devops-labs" src="./assets/term_tree.svg" />
 
-</td>
-<td width="50%" valign="top">
+<br/><br/>
 
-```yaml
-  supply_chain:
-    - sbom           # syft — full bill of materials
-    - cosign         # image signing
-    - dependabot     # auto dep updates
+<img width="80%" alt="$ journalctl -f /var/log/mission-2026.log" src="./assets/term_journalctl.svg" />
 
-  delivery:
-    - docker         # multi-stage, minimal image
-    - github_actions # CI/CD orchestration
-    - aws_ecr        # registry
-    - kubernetes     # deploy target
-
-  observability:
-    - prometheus     # metrics collection
-    - grafana        # dashboards + alerts
-    - loki           # log aggregation
-    - tempo          # distributed tracing
-    - otel_collector # unified telemetry
-
-  policy:
-    fail_on_critical: true
-    block_unsigned_images: true
-    require_sbom: true
-```
-
-</td>
-</tr>
-</table>
+</div>
 
 ---
 
-## `$ htop` — *what's running now*
-
-```log
-PID   PROCESS                    CPU   STATUS
-───   ──────────────────────────────────────────────────────────────────────
-001   [pgfn/dide2]               ████  automação de dados governamentais
-002   [rathosops/observability]  ████  LGTM stack + OpenTelemetry labs
-003   [locacamba]                ███   sistema de gestão para cliente final
-004   [aws-devops-lab]           ██    hands-on EC2 + ECR + CloudWatch
-005   [terraform-aws-lab]        ██    provisionando infra como código
-006   [k8s-platform-lab]         █     helm charts + ingress + HPA
-007   [cert/aws-ccp]             █     cloud practitioner prep
-───   ──────────────────────────────────────────────────────────────────────
-Load: high    Uptime: always    Theme: synthwave    Coffee: ongoing
-```
-
----
-
-## `$ tree ~/devops-labs --annotated`
-
-```txt
-~/devops-labs
-├── observability-lab        ← FastAPI + LGTM stack + OpenTelemetry + GitHub Actions
-├── dockerized-python-api    ← Multi-stage Dockerfile + Trivy scan + Docker Compose
-├── nginx-reverse-proxy-lab  ← TLS + rate limiting + security headers hardened
-├── ci-cd-secure-api         ← SAST + SCA + secrets + container scan pipeline
-├── aws-devops-lab           ← EC2 + ECR + S3 + CloudWatch [ in progress ]
-├── k8s-platform-lab         ← Deployments + Ingress + Helm + HPA [ in progress ]
-├── devsecops-pipeline-templ ← Semgrep + Gitleaks + Trivy + SBOM + Cosign
-├── terraform-aws-lab        ← IaC: entire AWS infra as code [ in progress ]
-├── GateHunter               ← Port scanner / service mapper (Python + Networking)
-└── my_dots                  ← Arch + Hyprland + Neovim + tmux dotfiles
-```
-
----
-
-## `$ journalctl -f /var/log/mission-2026.log`
-
-```log
-May 2026  12:30:01  [INFO]  linux + networking + docker fundamentals ........... [RUNNING]
-Jun 2026  00:00:00  [INFO]  github actions + ci/cd + devsecops pipelines ........ [QUEUED]
-Jun 2026  00:00:00  [CERT]  AWS Cloud Practitioner ................................ [QUEUED]
-Jul 2026  00:00:00  [INFO]  aws hands-on: ec2 + ecr + s3 + cloudwatch ........... [QUEUED]
-Aug 2026  00:00:00  [INFO]  terraform: infra as code para tudo acima ............. [QUEUED]
-Aug 2026  00:00:00  [INFO]  kubernetes: helm + hpa + ingress + troubleshoot ....... [QUEUED]
-Sep 2026  00:00:00  [CERT]  HashiCorp Terraform Associate ......................... [QUEUED]
-Sep 2026  00:00:00  [INFO]  devsecops: sast + sca + sbom + cosign + shift-left ... [QUEUED]
-Oct 2026  00:00:00  [INFO]  observability: runbooks + alerting + slos ............. [QUEUED]
-Nov 2026  00:00:00  [INFO]  iac + gitops: argocd + opentofu + gitops patterns ..... [QUEUED]
-Dec 2026  00:00:00  [APPLY] portfolio final + devops junior applications ........... [QUEUED]
-```
-
----
+<img width="100%" alt="rathosops" src="./assets/header.svg" />
 
 ## `$ cat /proc/github`
 
@@ -367,8 +227,9 @@ $ _
   • Todos os assets (header, stats, languages, contributions, typing, footer)
     + snake são gerados pelo workflow .github/workflows/profile.yml e
     commitados neste repo — sem dependência de terceiros em tempo de render.
-  • Gerador próprio low-poly/retro: scripts/ (svgkit.py + github_data.py +
-    gen_profile.py), Python stdlib puro, sem dependências.
+  • Gerador próprio low-poly/retro: scripts/ (svgkit.py = primitivas + ícones
+    low-poly; github_data.py = dados; terminals.py = janelas de terminal;
+    gen_profile.py = orquestrador), Python stdlib puro, sem dependências.
   • Para incluir stats privados, adicione o secret PROFILE_TOKEN (PAT classic
     com escopos repo + read:user). Sem ele, mostra apenas dados públicos.
   • Primeiro run: aba Actions → "Generate profile assets" → Run workflow.
