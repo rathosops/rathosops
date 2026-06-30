@@ -293,6 +293,9 @@ Dec 2026  00:00:00  [APPLY] portfolio final + devops junior applications .......
 
 ## `$ cat /proc/github`
 
+<!-- Cards abaixo vêm de instâncias públicas Vercel/Demolab e podem sumir por rate limit 429.
+     Correção definitiva (self-host): ver docs/SELF-HOST.md -->
+
 <div align="center">
 
 <img height="175" alt="GitHub stats" src="https://github-readme-stats.vercel.app/api?username=rathosops&show_icons=true&hide_border=true&bg_color=1a0b2e&title_color=ff6bd6&icon_color=00ffff&text_color=e0c3fc&ring_color=ff2e97&rank_icon=percentile&include_all_commits=true&count_private=true&cache_seconds=86400" />
